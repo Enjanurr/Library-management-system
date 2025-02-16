@@ -1,0 +1,27 @@
+
+  return (
+    <div className="flex items-center justify-center">
+      {/* ✅ Add form */}
+      <form onSubmit={handleSubmit} className="flex items-center space-x-2">
+        <div className="relative">
+          <Input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 px-4 py-2 text-lg border border-gray-300 rounded-md w-96"
+            placeholder="Search..."
+          />
+        </div>
+
+        <Button
+          type="submit" // ✅ Make button submit the form
+          className="bg-black text-white px-4 py-2 rounded-md hover:bg-gray-800"
+        >
+          Search
+        </Button>
+      </form>
+    </div>
+  );
+
+
+export default SearchBar;

@@ -16,7 +16,6 @@ interface IUser extends Document {
   role: "student" | "librarian";
 }
 
-
 const userSchema = new Schema<IUser>({
   userName: { type: String, required: true },
   email: { type: String, required: true, unique: true },
@@ -30,14 +29,19 @@ const userSchema = new Schema<IUser>({
 interface IBook extends Document {
   title: string;
   author: string;
-  isbn: string;
+  description: string;
+  available:boolean;
+  createdAt:Date;
+  upatedAt:Date;
 }
 
 const bookSchema = new Schema<IBook>({
   title: { type: String, required: true },
   author: { type: String, required: true },
-  isbn: { type: String, unique: true, required: true },
-});
+  description: { type: String, required: true },
+  available: { type: Boolean, default: true }, // ✅ Ensure availability status
+}, { timestamps: true });
+
 
 // ===============================
 // 📌 Study Schema (Tracks Book Availability)
@@ -49,8 +53,17 @@ interface IStudy extends Document {
 }
 
 const studySchema = new Schema<IStudy>({
-  book: { type: Schema.Types.ObjectId, ref: "Book", required: true, unique: true },
-  status: { type: String, enum: ["available", "borrowed"], default: "available" },
+  book: {
+    type: Schema.Types.ObjectId,
+    ref: "Book",
+    required: true,
+    unique: true,
+  },
+  status: {
+    type: String,
+    enum: ["available", "borrowed"],
+    default: "available",
+  },
   totalBorrowers: { type: Number, default: 0 }, // Tracks students who borrowed this book
 });
 
@@ -78,7 +91,9 @@ const transactionSchema = new Schema<ITransaction>({
 // Automatically generate transactionId before saving
 transactionSchema.pre("save", function (next) {
   if (!this.transactionId) {
-    this.transactionId = `TXN-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    this.transactionId = `TXN-${Date.now()}-${Math.floor(
+      Math.random() * 1000
+    )}`;
   }
   next();
 });
@@ -89,7 +104,10 @@ transactionSchema.pre("save", function (next) {
 export const User = mongoose.model<IUser>("User", userSchema);
 export const Book = mongoose.model<IBook>("Book", bookSchema);
 export const Study = mongoose.model<IStudy>("Study", studySchema);
-export const Transaction = mongoose.model<ITransaction>("Transaction", transactionSchema);
+export const Transaction = mongoose.model<ITransaction>(
+  "Transaction",
+  transactionSchema
+);
 
 // ===============================
 // 📌 Database Connection Function

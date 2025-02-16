@@ -1,0 +1,276 @@
+"use client";
+import { useEffect, useState } from "react";
+import { FaUserCircle } from "react-icons/fa";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { useRouter } from "next/navigation";
+
+interface Book {
+  _id: string; // Updated to match MongoDB ID format
+  title: string;
+  author: string;
+  description: string;
+  available: boolean;
+  borrowedBy?: string;
+}
+
+const AdminDashboard = () => {
+  const router = useRouter()
+  const [getBooks, setGetBooks] = useState<Book[]>([]);
+  const [loading, setLoading] = useState(true); // Track loading state
+  const [newBook, setNewBook] = useState<Omit<Book, "_id">>({
+    title: "",
+    author: "",
+    description: "",
+    available: true,
+  });
+
+  // Function to get all books from API
+  useEffect(() => {
+    const fetchBooks = async () => {
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_HOST}/api/admin/getAllBooks`
+        );
+        if (!response.ok) throw new Error("Failed to fetch books");
+
+        const data = await response.json();
+        console.log("Fetched books:", data); // Debugging
+
+        // Ensure MongoDB _id is properly mapped
+        setGetBooks(data);
+      } catch (error) {
+        console.error("Error fetching books:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBooks();
+  }, []);
+
+  // Function to add a new book
+  const addBook = async () => {
+    if (newBook.title.trim() && newBook.author.trim()) {
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_HOST}/api/admin/addBooks`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(newBook),
+          }
+        );
+
+        if (!response.ok) throw new Error("Failed to add book");
+
+        const data = await response.json();
+        setGetBooks([...getBooks, data.book]); // Add new book to state
+
+        setNewBook({ title: "", author: "", description: "", available: true });
+      } catch (error) {
+        console.error("Error adding book:", error);
+      }
+    }
+  };
+
+  // Function to remove a book
+  const removeBook = async (id: string) => {
+    try {
+      console.log("Deleting book with ID:", id); // Debugging
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_HOST}/api/admin/removeBook/${id}`, // ✅ Ensure `id` is used
+        { method: "DELETE" }
+      );
+
+      if (!response.ok) throw new Error("Failed to remove book");
+
+      // ✅ Remove the deleted book from state
+      setGetBooks((prevBooks) => prevBooks.filter((book) => book._id !== id));
+
+      console.log("Book removed successfully!");
+    } catch (error) {
+      console.error("Error removing book:", error);
+    }
+  };
+
+  // Function to return a borrowed book
+  const returnBook = async (id: string) => {
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_HOST}/api/admin/returnBook/${id}`,
+        { method: "PUT" }
+      );
+
+      if (!response.ok) throw new Error("Failed to return book");
+
+      setGetBooks(
+        getBooks.map((book) =>
+          book._id === id
+            ? { ...book, available: true, borrowedBy: undefined }
+            : book
+        )
+      );
+    } catch (error) {
+      console.error("Error returning book:", error);
+    }
+  };
+
+  return (
+    <div className="p-6">
+      {/* Admin Header */}
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Librarian Dashboard</h1>
+      <div className="flex justify-center items-center space-x-2 mr-3"> 
+         <div>
+          <button className= "bg-black text-white p-2 rounded-sm" onClick={()=> router.push("/")
+      }>Homepage
+      </button>
+      </div> 
+      <FaUserCircle size={40} className="text-gray-600" />
+     
+      </div>
+      </div>
+
+      {/* Add Book Section */}
+      <div className="flex justify-end mb-4">
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button className="bg-green-500 text-white">+ Add Book</Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Add a New Book</DialogTitle>
+            </DialogHeader>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                addBook();
+              }}
+            >
+              <div className="grid gap-4 py-4">
+                <Input
+                  placeholder="Book Title"
+                  value={newBook.title}
+                  onChange={(e) =>
+                    setNewBook({ ...newBook, title: e.target.value })
+                  }
+                  required
+                />
+                <Input
+                  placeholder="Author"
+                  value={newBook.author}
+                  onChange={(e) =>
+                    setNewBook({ ...newBook, author: e.target.value })
+                  }
+                  required
+                />
+                <Textarea
+                  placeholder="Description"
+                  value={newBook.description}
+                  onChange={(e) =>
+                    setNewBook({ ...newBook, description: e.target.value })
+                  }
+                />
+              </div>
+              <DialogFooter>
+                <Button type="submit" className="bg-blue-500 text-white">
+                  Save Book
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {/* Display Books */}
+      {loading ? (
+        <p className="text-gray-500">Loading books...</p>
+      ) : getBooks.length === 0 ? (
+        <p className="text-gray-500">No books available.</p>
+      ) : (
+        <div className="mt-6 grid grid-cols-2 gap-4">
+          {/* Available Books */}
+          <div className="border p-4 rounded-lg bg-gray-50">
+            <h2 className="text-lg font-semibold mb-2 text-green-600">
+              Available Books
+            </h2>
+            <div className="max-h-[300px] overflow-y-auto">
+              {getBooks
+                .filter((book) => book.available)
+                .map((book) => (
+                  <div
+                    key={book._id}
+                    className="border p-3 mb-2 rounded-lg shadow bg-white flex justify-between items-center"
+                  >
+                    <div>
+                      <p className="font-bold">{book.title}</p>
+                      <p className="text-gray-700">by {book.author}</p>
+                      {book.description && (
+                        <p className="text-gray-500 text-sm">
+                          {book.description}
+                        </p>
+                      )}
+                      <span className="text-green-600 text-sm">Available</span>
+                    </div>
+                    <Button
+                      onClick={() => {
+                        console.log("Attempting to delete book:", book._id); // Debugging
+                        removeBook(book._id);
+                      }}
+                      className="bg-red-500 text-white"
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                ))}
+            </div>
+          </div>
+
+          {/* Borrowed Books */}
+          <div className="border p-4 rounded-lg bg-gray-50">
+            <h2 className="text-lg font-semibold mb-2 text-red-600">
+              Borrowed Books
+            </h2>
+            <div className="max-h-[300px] overflow-y-auto">
+              {getBooks
+                .filter((book) => !book.available)
+                .map((book) => (
+                  <div
+                    key={book._id}
+                    className="border p-3 mb-2 rounded-lg shadow bg-white flex justify-between items-center"
+                  >
+                    <div>
+                      <p className="font-bold">{book.title}</p>
+                      <p className="text-gray-700">by {book.author}</p>
+                      <span className="text-red-600 text-sm">
+                        Borrowed by: {book.borrowedBy}
+                      </span>
+                    </div>
+                    <Button
+                      onClick={() => returnBook(book._id)}
+                      className="bg-blue-500 text-white"
+                    >
+                      Return Book
+                    </Button>
+                  </div>
+                ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default AdminDashboard;

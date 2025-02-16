@@ -15,9 +15,13 @@ interface Identity {
 export const register = async (
   req: Request<{}, {}, Identity>,
   res: Response<any>
-):Promise<any>=> {
+): Promise<any> => {
   try {
     const { userName, email, password } = req.body;
+
+    if (!userName || !email || !password) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -40,17 +44,21 @@ export const register = async (
       email: newUser.email,
       role: newUser.role,
     });
+  
   } catch (error) {
     console.log(error);
-    return res.status(500).json({ message: "Server Error" });
+    return res.status(500).json({ message: "Error in creating an account" });
   }
-}
+};
 
 interface userLogin {
   email: string;
   password: string;
 }
-export const login = async(req: Request<{}, {}, userLogin>, res: Response):Promise<any>=>{
+export const login = async (
+  req: Request<{}, {}, userLogin>,
+  res: Response
+): Promise<any> => {
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
@@ -62,13 +70,15 @@ export const login = async(req: Request<{}, {}, userLogin>, res: Response):Promi
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
-
+    /*if (user.role !== "librarian") {
+      return res.status(403).json({ message: "Access denied. Admins only" });
+    }*/
     const token = jwt.sign(
       { userId: user._id, role: user.role }, // Payload (can include userId, role, etc.)
-      process.env.JWT_SECRET || "error", // Secret key (should be in .env file)
+      process.env.ACCESS_JWT_SECRET || "error", // Secret key (should be in .env file)
       { expiresIn: "1h" } // Token expiration time
     );
-
+   // console.log(token);
     return res.status(200).json({
       message: "Login successful",
       token, // Send the token to the client
@@ -79,9 +89,9 @@ export const login = async(req: Request<{}, {}, userLogin>, res: Response):Promi
     console.log(error);
     return res.status(500).json({ message: "Server Error" });
   }
-}
+};
 
-export const logout = async (req: Request, res: Response) :Promise<any>=>{
+export const logout = async (req: Request, res: Response): Promise<any> => {
   res.clearCookie("token");
   return res.status(200).json({ message: "Logged out Successfully" });
-}
+};

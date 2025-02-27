@@ -1,6 +1,7 @@
-'use client'
+"use client";
 import { FaUserCircle } from "react-icons/fa";
 import { GiHamburgerMenu } from "react-icons/gi";
+import { useRouter } from "next/navigation"; // Import useRouter
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,17 +12,31 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-const logout = async () => {
-  try {
-    await fetch(`${process.env.NEXT_PUBLIC_HOST}/api/auth/logout`);
-    alert("Successfully logged out");
-    window.location.reload();
-  } catch (error) {
-    console.error("Failed to logout", error);
-  }
-};
-
 const Profile = () => {
+  const router = useRouter();
+  const handleLogout = async () => {
+    try {
+      // Call backend logout endpoint
+      const response = await fetch(`${process.env.NEXT_PUBLIC_HOST}/api/auth/logout`, {
+        method: "POST",
+        credentials: "include", // ✅ Ensures cookies are cleared
+      });
+  
+      if (!response.ok) throw new Error("Failed to log out");
+  
+      // ✅ Clear local storage (for JWT-based authentication)
+      localStorage.removeItem("token");
+      localStorage.removeItem("login");
+     // localStorage.removeItem("registeredUser"); // Remove extra auth state if stored
+      //localStorage.removeItem("loggedInUser");
+  
+      alert("Successfully logged out!");
+      router.push("/"); // ✅ Redirect to homepage after logout
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
+  
   return (
     <section>
       <div className="flex justify-end">
@@ -38,7 +53,6 @@ const Profile = () => {
             <DialogContent className="sm:max-w-2xl">
               <DialogHeader>
                 <DialogTitle>My Profile</DialogTitle>
-                {/* ✅ Changed from DialogDescription (p tag) to div */}
                 <div className="flex items-center space-x-2 mt-4">
                   <FaUserCircle size={40} />
                   <h1 className="text-xl font-bold text-black">Pedro Duarte</h1>
@@ -46,10 +60,8 @@ const Profile = () => {
               </DialogHeader>
 
               <DialogFooter>
-                <div>
-                  <Button>Close</Button>
-                  <Button onClick={logout}>Logout</Button>
-                </div>
+                <Button>Close</Button>
+                <Button onClick={handleLogout}>Logout</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>

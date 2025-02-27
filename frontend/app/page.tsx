@@ -2,10 +2,10 @@ import { Card } from "@/components/ui/card";
 import Readmore from "@/components/Readmore";
 import Profile from "@/components/profile";
 import Search from "@/components/search";
-  
 
+// Define the Book interface
 interface Book {
-  _id: number;
+  _id: string;
   title: string;
   author: string;
   description: string;
@@ -14,9 +14,8 @@ interface Book {
 }
 
 export default async function HomePage() {
+  let books: Book[] = []; // Store books here
 
-  
-  let books: Book[] = [];
   try {
     const response = await fetch(`${process.env.NEXT_PUBLIC_HOST}/api/home/getAllBooks`, {
       cache: "no-store",
@@ -24,14 +23,9 @@ export default async function HomePage() {
 
     if (!response.ok) throw new Error("Failed to fetch books");
 
-    const data = await response.json();
-    
-    // Ensure the response is an array before assigning
-    if (Array.isArray(data)) {
-      books = data;
-    } else {
-      console.error("Unexpected API response:", data);
-    }
+     // a note to my self ,don't declare this as a const haha.....
+     books = await response.json(); // Store the response data in `books` can be used in the map function later  
+
   } catch (error) {
     console.error("Error fetching books:", error);
   }
@@ -44,7 +38,8 @@ export default async function HomePage() {
       </div>
 
       <Profile />
-    <Search />
+      <Search />
+
       {/* Book List */}
       <div className="flex flex-wrap justify-center gap-6 pt-10">
         {books.length > 0 ? (
@@ -60,7 +55,7 @@ export default async function HomePage() {
                 <p className="text-gray-600 text-sm">{book.author}</p>
                 <p className="mt-2 text-gray-500">{book.description}</p>
 
-               <Readmore />
+                <Readmore books_id={book._id} /> {/* Extract the book id */}
               </div>
             </Card>
           ))

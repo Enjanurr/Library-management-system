@@ -10,7 +10,9 @@ const port = process.env.PORT || "8080";
 
 app.use(cors({
   origin: 'http://localhost:3000', // Allow frontend to communicate with backend
-  methods: ['GET,POST','DELETE','PUT']
+  credentials:true,
+  methods: ['GET','POST','DELETE', 'PATCH'],
+  allowedHeaders: ["Content-Type", "Authorization"],
 }));
 app.use(express.json());
 

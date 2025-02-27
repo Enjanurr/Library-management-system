@@ -1,4 +1,4 @@
-'use client';
+"use client";
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
@@ -27,7 +27,7 @@ const RegisterDialog = () => {
     if (typeof window !== "undefined") {
       const token = localStorage.getItem("token");
       if (token) {
-        router.push("/authentication/login");
+        router.push("/auth/login");
       }
     }
   }, [router]);
@@ -36,7 +36,7 @@ const RegisterDialog = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+  
     try {
       const body = { userName, email, password };
       const res = await fetch(
@@ -47,21 +47,26 @@ const RegisterDialog = () => {
           body: JSON.stringify(body),
         }
       );
-
+  
       if (!res.ok) {
         const errorData = await res.json();
         setErrorMessage(errorData.message || "Registration Failed");
         return;
       }
-
+  
       const data = await res.json();
       console.log("Registration success", data);
-      router.push("/authentication/login");
+  
+      // ✅ Save registeredUser status in localStorage
+      localStorage.setItem("registeredUser", "true");
+  
+      router.push("/auth/login");
     } catch (error) {
       console.error("Registration error", error);
       setErrorMessage("An unexpected error occurred");
     }
   };
+  
 
   return (
     <section className="flex items-center justify-center min-h-screen">
@@ -129,5 +134,5 @@ const RegisterDialog = () => {
       </div>
     </section>
   );
-}
+};
 export default RegisterDialog;

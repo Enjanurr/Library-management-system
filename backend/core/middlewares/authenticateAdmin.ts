@@ -18,12 +18,13 @@ export default function authenticateAdmin(
   req: AuthRequest,
   res: Response,
   next: NextFunction
-) {
+): void { // Ensure function explicitly returns void
   const authHeader = req.headers.authorization || "";
   const token = authHeader.replace("Bearer ", "").trim();
 
   if (!token) {
-    return res.status(401).json({ message: "No token provided" });
+    res.status(401).json({ message: "No token provided" });
+    return; // Ensure function exits
   }
 
   try {
@@ -31,12 +32,13 @@ export default function authenticateAdmin(
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
 
     if (decoded.role !== "librarian") {
-      return res.status(403).json({ message: "Access denied. Admins only" });
+      res.status(403).json({ message: "Access denied. Admins only" });
+      return; // Ensure function exits
     }
 
     req.user = decoded; // Attach user data to request
     next(); // Proceed to the next middleware or route
   } catch (error) {
-    return res.status(401).json({ message: "Invalid token" });
+    res.status(401).json({ message: "Invalid token" });
   }
 }

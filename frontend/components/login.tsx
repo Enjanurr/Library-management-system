@@ -33,30 +33,33 @@ const LoginDialog=()=>{
     const handleLogin = async (e: React.FormEvent) => {
       e.preventDefault();
       setErrorMessage("");
-  
+    
       try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_HOST}/api/auth/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, password }),
         });
-  
+    
         if (!res.ok) {
           const errorData = await res.json();
           setErrorMessage(errorData.message || "Login Failed");
           return;
         }
-  
+    
         const data = await res.json();
         localStorage.setItem("token", data.token);
+    
+        // ✅ Save registeredUser status in localStorage
+        localStorage.setItem("login", "true");
+    
         router.push("/");
-  
       } catch (error) {
         console.error("Login error:", error);
         setErrorMessage("An unexpected error occurred. Please try again.");
       }
     };
-  
+    
     // Disable button if input is empty
     const isFormValid = email.trim() && password.trim();
   

@@ -59,11 +59,11 @@ export const updateBook = async (req: Request, res: Response): Promise<any> => {
   try {
     const { id } = req.params; // Book ID from URL params
 
-    // Find the active transaction where the book is borrowed but not returned
+    // Find the latest transaction where the book is still borrowed
     const transaction = await Transaction.findOne({
       book: id, // ✅ Find by book ID only
-      returnedAt: null, // Ensure it's currently borrowed
-    });
+      status: "borrowed", // ✅ Check if the book is currently borrowed
+    }).sort({ borrowDate: -1 }); // ✅ Get the most recent transaction
 
     if (!transaction) {
       return res.status(400).json({ message: "No active borrow record found for this book." });
@@ -75,13 +75,13 @@ export const updateBook = async (req: Request, res: Response): Promise<any> => {
     await transaction.save();
 
     // Update book availability
-    const update = await Book.findByIdAndUpdate(id, { available: true }, { new: true });
+    const updatedBook = await Book.findByIdAndUpdate(id, { available: true }, { new: true });
 
-    if (!update) {
+    if (!updatedBook) {
       return res.status(404).json({ message: "Failed to update the book" });
     }
 
-    return res.json({ message: "Book returned successfully", book: update });
+    return res.json({ message: "Book returned successfully", book: updatedBook });
   } catch (error) {
     console.error("Failed to update book", error);
     res.status(500).json({ message: "Internal Server Error" });

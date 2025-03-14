@@ -2,6 +2,7 @@ import { Card } from "@/components/ui/card";
 import Readmore from "@/components/Readmore";
 import Profile from "@/components/profile";
 import Search from "@/components/search";
+import Nav from "@/components/Nav";
 
 // Define the Book interface
 interface Book {
@@ -33,12 +34,11 @@ export default async function HomePage() {
   return (
     <section>
       {/* Header */}
-      <div className="bg-black flex justify-start items-start p-4">
-        <h1 className="text-white text-2xl">LIB</h1>
-      </div>
+     <Nav />
 
-      <Profile />
-      <Search />
+    <div className="mt-7">
+    <Search />
+    </div>
 
       {/* Book List */}
       <div className="flex flex-wrap justify-center gap-6 pt-10">

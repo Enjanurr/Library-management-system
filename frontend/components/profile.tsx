@@ -1,42 +1,90 @@
 "use client";
 import { FaUserCircle } from "react-icons/fa";
 import { GiHamburgerMenu } from "react-icons/gi";
-import { useRouter } from "next/navigation"; // Import useRouter
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { useEffect, useState } from "react";
 
 const Profile = () => {
   const router = useRouter();
+  const [userId, setUserId] = useState<string | null>(null);
+  const [userData, setUserData] = useState<any>(null);
+
+  // ✅ Function to decode JWT and get userId
+  const decodedJWT = (token: string) => {
+    try {
+      const payloadBase64 = token.split(".")[1];
+      const decodedPayload = JSON.parse(atob(payloadBase64));
+      return decodedPayload.userId;
+    } catch (error) {
+      console.error("Invalid Token:", error);
+      return null;
+    }
+  };
+
+  // ✅ Fetch user profile when page loads
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      const id = decodedJWT(token);
+      setUserId(id);
+
+      // ✅ Fetch user profile from the backend
+      fetch(`${process.env.NEXT_PUBLIC_HOST}/api/home/profile/${id}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          console.log("User Profile:", data);
+          setUserData(data);
+        })
+        .catch((error) => console.error("Failed to fetch profile:", error));
+    }
+  }, []);
+
+  // ✅ Handle Logout
   const handleLogout = async () => {
     try {
-      // Call backend logout endpoint
-      const response = await fetch(`${process.env.NEXT_PUBLIC_HOST}/api/auth/logout`, {
-        method: "POST",
-        credentials: "include", // ✅ Ensures cookies are cleared
-      });
-  
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_HOST}/api/auth/logout`,
+        {
+          method: "POST",
+          credentials: "include",
+        }
+      );
+
       if (!response.ok) throw new Error("Failed to log out");
-  
-      // ✅ Clear local storage (for JWT-based authentication)
+
       localStorage.removeItem("token");
       localStorage.removeItem("login");
-     // localStorage.removeItem("registeredUser"); // Remove extra auth state if stored
-      //localStorage.removeItem("loggedInUser");
-  
+
       alert("Successfully logged out!");
-      router.push("/"); // ✅ Redirect to homepage after logout
+      router.push("/");
+      window.location.reload();
     } catch (error) {
       console.error("Logout failed:", error);
     }
   };
-  
+  const loggedout = localStorage.getItem("login");
+
+  // ✅ Redirect to login page
+  const login = async () => {
+    router.push("/auth/login");
+  };
+
+  // ✅ Redirect to Profile Page
+  const goToProfile = () => {
+    router.push("/profile");
+  };
+
   return (
     <section>
       <div className="flex justify-end">
@@ -45,26 +93,63 @@ const Profile = () => {
           <GiHamburgerMenu size={30} className="cursor-pointer" />
 
           {/* Profile Icon */}
-          <Dialog>
-            <DialogTrigger asChild>
-              <FaUserCircle size={30} className="cursor-pointer" />
-            </DialogTrigger>
-            {/* Bigger Dialog */}
-            <DialogContent className="sm:max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>My Profile</DialogTitle>
-                <div className="flex items-center space-x-2 mt-4">
-                  <FaUserCircle size={40} />
-                  <h1 className="text-xl font-bold text-black">Pedro Duarte</h1>
-                </div>
-              </DialogHeader>
+          <Popover>
+            <PopoverTrigger asChild>
+              <FaUserCircle
+                size={30}
+                className="cursor-pointer text-white  hover:text-gray-300 transition-all"
+              />
+            </PopoverTrigger>
+            {/* ✅ Now the Popover opens below the Profile Icon */}
+            <PopoverContent className="w-64 mt-2 shadow-lg border rounded-lg bg-white">
+              {userData ? (
+                <div>
+                  {/* ✅ User Profile */}
+                  <div className="flex items-center space-x-2 p-4">
+                    <FaUserCircle size={40} />
+                    <div>
+                      <h1 className="text-xl font-bold text-black">
+                        {userData.userName}
+                      </h1>
+                      <p className="text-gray-500 text-sm">{userData.email}</p>
+                    </div>
+                  </div>
 
-              <DialogFooter>
-                <Button>Close</Button>
-                <Button onClick={handleLogout}>Logout</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+                  {/* ✅ Manage Account Button */}
+                  <div className="p-2 border-t">
+                    <Button
+                      className="w-full bg-blue-500 hover:bg-blue-600 mb-2"
+                      onClick={goToProfile}
+                    >
+                      Manage Account
+                    </Button>
+                  </div>
+
+                  {/* ✅ Logout Button */}
+                  <div className="p-2 border-t">
+                    {}
+                    <Button
+                      className="w-full bg-red-500 hover:bg-red-600"
+                      onClick={handleLogout}
+                      disabled={loggedout === "false"}
+                    >
+                      Logout
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-4 text-center">
+                  {/* ✅ Show Login Button only if not logged in */}
+                  <p className="text-gray-500 text-sm mb-2">
+                    You are not logged in.
+                  </p>
+                  <Button className="w-full" onClick={login}>
+                    Login
+                  </Button>
+                </div>
+              )}
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
     </section>

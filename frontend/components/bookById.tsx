@@ -41,26 +41,47 @@ const BookById = ({ book }: { book: Book }) => {
 
   // ✅ Handle Borrow Function
   const handleBorrow = async () => {
-    console.log("Attempting to borrow book - userId:", userId, "book_id:", book_id);
+    console.log(
+      "Attempting to borrow book - userId:",
+      userId,
+      "book_id:",
+      book_id
+    );
 
-    if (!userId || !book_id) {
-      console.error(`Missing values - userId: ${userId}, book_id: ${book_id}`);
-      alert("Something went wrong! Missing userId or book_id.");
-      return;
+    const token = localStorage.getItem("token");
+    const loggedin = localStorage.getItem("login") === "true";
+    const registered = localStorage.getItem("registeredUser") === "true";
+
+    if (!loggedin) {
+      alert("You need to log in first.");
+      router.push("/auth/login");
+      return; // ✅ Stop execution
     }
 
+    if (!registered) {
+      alert("You need to register first.");
+      router.push("/auth/register");
+      return; // ✅ Stop execution
+    }
+    if (!token) {
+      alert("You need to register first");
+      router.push("/auth/register");
+    }
+   
     try {
-      const token = localStorage.getItem("token");
-      if (!token) throw new Error("User not authenticated");
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_HOST}/api/home/borrow`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ book_Id: book_id, userId }), // ✅ Corrected payload key
-      });
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_HOST}/api/home/borrow`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ book_Id: book_id, userId }),
+        }
+      );
 
       const data = await response.json();
 
@@ -83,7 +104,7 @@ const BookById = ({ book }: { book: Book }) => {
     <section className="relative min-h-screen bg-gray-100 flex flex-col items-center pt-6">
       {/* ✅ Go Back Button */}
       <div className="w-full max-w-5xl px-4 mb-4">
-       <GoToHomePage />
+        <GoToHomePage />
       </div>
 
       {/* Main Content */}
@@ -91,7 +112,11 @@ const BookById = ({ book }: { book: Book }) => {
         <div className="flex flex-col md:flex-row items-center gap-10">
           {/* Left: Book Image */}
           <div className="w-full md:w-1/2 flex justify-center">
-            <img src={book.image} alt={book.title} className="w-80 h-96 object-cover rounded-lg shadow-md" />
+            <img
+              src={book.image}
+              alt={book.title}
+              className="w-80 h-96 object-cover rounded-lg shadow-md"
+            />
           </div>
 
           {/* Right: Book Details */}

@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
-import { Book ,Transaction,User} from "../initializer/database"; // ✅ Ensure this is the correct path
+import { Book, Transaction, User } from "../initializer/database"; // ✅ Ensure this is the correct path
+import mongoose from "mongoose";
 
 // Fetch all books
 export const home = async (req: Request, res: Response): Promise<any> => {
@@ -41,7 +42,6 @@ export const getBookById = async (
     if (!getBookById) {
       return res.status(404).json({ message: "Book not found" });
     }
-   
 
     return res.status(200).json({ getBookById });
   } catch (error) {
@@ -55,7 +55,9 @@ export const borrowBook = async (req: Request, res: Response): Promise<any> => {
     const { userId, book_Id } = req.body;
 
     if (!userId || !book_Id) {
-      return res.status(400).json({ message: "User ID and Book ID are required." });
+      return res
+        .status(400)
+        .json({ message: "User ID and Book ID are required." });
     }
 
     // Check if user exists
@@ -69,7 +71,10 @@ export const borrowBook = async (req: Request, res: Response): Promise<any> => {
     }).sort({ borrowDate: -1 }); // Get the latest transaction
 
     if (existingTransaction && !existingTransaction.returnDate) {
-      return res.status(400).json({ message: "You have already borrowed this book and have not returned it yet." });
+      return res.status(400).json({
+        message:
+          "You have already borrowed this book and have not returned it yet.",
+      });
     }
 
     // Check and update book availability in a single step
@@ -80,7 +85,9 @@ export const borrowBook = async (req: Request, res: Response): Promise<any> => {
     );
 
     if (!book) {
-      return res.status(400).json({ message: "Book is not available or not found." });
+      return res
+        .status(400)
+        .json({ message: "Book is not available or not found." });
     }
 
     // Create the borrow transaction
@@ -92,7 +99,9 @@ export const borrowBook = async (req: Request, res: Response): Promise<any> => {
     });
 
     // Populate student and book details for response
-    const populatedTransaction = await Transaction.findById(borrowTransaction._id)
+    const populatedTransaction = await Transaction.findById(
+      borrowTransaction._id
+    )
       .populate("student", "name email")
       .populate("book", "title author description image");
 
@@ -100,10 +109,74 @@ export const borrowBook = async (req: Request, res: Response): Promise<any> => {
       message: "Book borrowed successfully.",
       transaction: populatedTransaction,
     });
-
   } catch (error) {
     console.error("Borrow error:", error);
     return res.status(500).json({ message: "Server error.", error });
   }
 };
 //almost done with the system good job self all you have to do now is the search and the category and pagination and the design
+export const Profile = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { userId } = req.params; // ✅ Extract userId from URL parameter
+
+    const userProfile = await User.findById(userId);
+    if (!userProfile) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    return res.status(200).json({
+      userName: userProfile.userName,
+      email: userProfile.email,
+      role: userProfile.role,
+    });
+  } catch (error) {
+    console.error("Error in fetching profile", error);
+    return res.status(500).json({ message: "Server error.", error });
+  }
+};
+
+// display the borrowed books by the user;
+/*export const myBooks = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { userId } = req.params;
+    const objectId = new mongoose.Types.ObjectId(userId);
+
+    // Step 1: Get distinct book IDs borrowed by the student
+    const bookIds = await Transaction.distinct("book", { student: objectId });
+
+    if (bookIds.length === 0) {
+      return res.status(404).json({ message: "No borrowed books found." });
+    }
+
+    // Step 2: Fetch book details using the unique book IDs
+    const borrowedBooks = await Book.find({ _id: { $in: bookIds } }, "title author available");
+
+    return res.status(200).json(borrowedBooks);
+  } catch (error) {
+    console.error("Failed to fetch borrowed books", error);
+    res.status(500).json({ message: "Something went wrong" });
+  }
+};
+*/
+export const myBooks = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { userId } = req.params;
+    const objectId = new mongoose.Types.ObjectId(userId);
+
+    // ✅ Get unique book IDs
+    const borrowedBookIds = await Transaction.find({ student: objectId }).distinct("book");
+
+    // ✅ Fetch actual book details
+    const borrowedBooks = await Book.find({ _id: { $in: borrowedBookIds } }).select("title author available");
+
+    if (borrowedBooks.length === 0) {
+      return res.status(404).json({ message: "No borrowed books found." });
+    }
+
+    return res.status(200).json(borrowedBooks);
+  } catch (error) {
+    console.error("Failed to fetch borrowed books", error);
+    res.status(500).json({ message: "Something went wrong" });
+  }
+};
+

@@ -44,7 +44,6 @@ export const register = async (
       email: newUser.email,
       role: newUser.role,
     });
-  
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Error in creating an account" });
@@ -78,7 +77,7 @@ export const login = async (
       process.env.ACCESS_JWT_SECRET || "error", // Secret key (should be in .env file)
       { expiresIn: "1h" } // Token expiration time
     );
-   // console.log(token);
+    // console.log(token);
     return res.status(200).json({
       message: "Login successful",
       token, // Send the token to the client
@@ -92,6 +91,10 @@ export const login = async (
 };
 
 export const logout = async (req: Request, res: Response): Promise<any> => {
-  res.clearCookie("token", { httpOnly: true, secure: true, sameSite: "strict" });
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: true,
+    sameSite: "strict",
+  });
   return res.status(200).json({ message: "Logged out Successfully" });
 };
